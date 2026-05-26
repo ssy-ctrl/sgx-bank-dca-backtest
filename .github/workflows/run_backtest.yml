@@ -1,0 +1,32 @@
+name: Run SGX DCA Backtest
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install yfinance pandas numpy matplotlib
+
+      - name: Run DCA backtest
+        run: |
+          python dca_backtest.py
+
+      - name: Upload chart
+        uses: actions/upload-artifact@v4
+        with:
+          name: dca-backtest-chart
+          path: dca_backtest_results.png
