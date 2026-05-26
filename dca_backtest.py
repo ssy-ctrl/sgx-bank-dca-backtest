@@ -18,23 +18,23 @@ import matplotlib.ticker as mticker
 import warnings
 warnings.filterwarnings('ignore')
 
-# ── Configuration ──────────────────────────────────────────────
+# Configuration
 TICKERS   = {'DBS': 'D05.SI', 'OCBC': 'O39.SI', 'UOB': 'U11.SI'}
 START     = '2014-01-01'
 END       = '2024-01-01'
 MONTHLY_INVEST = 1000   # SGD per month baseline
 
-# ── 1. Download price data ──────────────────────────────────────
+# 1. Download price data
 print("Downloading 10-year price data for DBS, OCBC, UOB ...")
 raw = yf.download(list(TICKERS.values()), start=START, end=END, auto_adjust=True, progress=False)
 prices = raw['Close'].copy()
 prices.columns = list(TICKERS.keys())
 prices.dropna(how='all', inplace=True)
 prices.ffill(inplace=True)
-print(f"Data loaded: {prices.index[0].date()} to {prices.index[-1].date()}  ({len(prices)} trading days)
-")
+print("Data loaded: " + str(prices.index[0].date()) + " to " + str(prices.index[-1].date()) + "  (" + str(len(prices)) + " trading days)")
+print()
 
-# ── 2. Helper: simulate DCA for one ticker ─────────────────────
+# 2. Helper: simulate DCA for one ticker
 def simulate_dca(price_series, invest_dates, amount_per_period):
     shares = 0.0
     total_invested = 0.0
@@ -64,7 +64,7 @@ def simulate_dca(price_series, invest_dates, amount_per_period):
                 total_shares=shares, avg_cost=avg_cost, final_price=final_price,
                 records=df)
 
-# ── 3. Build invest date schedules ─────────────────────────────
+# 3. Build invest date schedules
 start_dt = pd.Timestamp(START)
 end_dt   = pd.Timestamp(END)
 
@@ -72,7 +72,7 @@ monthly_dates   = pd.date_range(start=start_dt, end=end_dt, freq='MS')
 quarterly_dates = pd.date_range(start=start_dt, end=end_dt, freq='QS')
 weekly_dates    = pd.date_range(start=start_dt, end=end_dt, freq='W-MON')
 
-# ── 4. Run all strategies ───────────────────────────────────────
+# 4. Run all strategies
 strategies = {
     'Monthly (SGD 1000/mo)':    (monthly_dates,   MONTHLY_INVEST),
     'Quarterly (SGD 3000/qtr)': (quarterly_dates, MONTHLY_INVEST * 3),
@@ -86,7 +86,7 @@ for strat_name, (dates, amount) in strategies.items():
         r['strategy'] = strat_name
         results.append(r)
 
-# ── 5. Equal-weight portfolio (monthly, split evenly) ──────────
+# 5. Equal-weight portfolio (monthly, split evenly)
 def simulate_portfolio(prices_df, invest_dates, total_amount):
     tickers = prices_df.columns.tolist()
     per_stock = total_amount / len(tickers)
@@ -121,7 +121,7 @@ def simulate_portfolio(prices_df, invest_dates, total_amount):
 port_result = simulate_portfolio(prices, monthly_dates, MONTHLY_INVEST)
 results.append(port_result)
 
-# ── 6. Summary table ────────────────────────────────────────────
+# 6. Summary table
 summary_rows = []
 for r in results:
     summary_rows.append({
@@ -145,15 +145,15 @@ print()
 
 best = df_summary.iloc[0]
 print("=" * 90)
-print(f"BEST STRATEGY: {best['Strategy']}  |  Ticker: {best['Ticker']}")
-print(f"  Total Invested : SGD {best['Total Invested (SGD)']:,.0f}")
-print(f"  Final Value    : SGD {best['Final Value (SGD)']:,.0f}")
-print(f"  Profit         : SGD {best['Profit (SGD)']:,.0f}")
-print(f"  ROI            : {best['ROI (%)']:.1f}%")
-print(f"  CAGR           : {best['CAGR (%)']:.2f}% per year")
+print("BEST STRATEGY: " + str(best['Strategy']) + "  |  Ticker: " + str(best['Ticker']))
+print("  Total Invested : SGD " + str(int(best['Total Invested (SGD)'])))
+print("  Final Value    : SGD " + str(int(best['Final Value (SGD)'])))
+print("  Profit         : SGD " + str(int(best['Profit (SGD)'])))
+print("  ROI            : " + str(best['ROI (%)']) + "%")
+print("  CAGR           : " + str(best['CAGR (%)']) + "% per year")
 print("=" * 90)
 
-# ── 7. Charts ───────────────────────────────────────────────────
+# 7. Charts
 colors = {'DBS': '#003087', 'OCBC': '#C8102E', 'UOB': '#EF3340'}
 fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 fig.suptitle('SGX Bank Stocks -- 10-Year DCA Backtest (2014-2024)', fontsize=15, fontweight='bold')
@@ -167,7 +167,7 @@ bc = [colors.get(t, '#888') for t in tl]
 bars = ax.bar(tl, cg, color=bc, edgecolor='white', linewidth=1.5)
 for bar, val in zip(bars, cg):
     ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.2,
-            f'{val:.1f}%', ha='center', va='bottom', fontweight='bold')
+            str(round(val, 1)) + '%', ha='center', va='bottom', fontweight='bold')
 ax.set_title('CAGR by Stock (Monthly DCA)', fontsize=12)
 ax.set_ylabel('CAGR (%)')
 ax.set_ylim(0, max(cg) * 1.3)
@@ -187,7 +187,7 @@ ax.set_title('Portfolio Value Growth (Monthly DCA)', fontsize=12)
 ax.set_ylabel('SGD')
 ax.legend()
 ax.grid(alpha=0.3)
-ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:,.0f}'))
+ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: '{:,.0f}'.format(x)))
 
 # 7c. DBS ROI by strategy
 ax = axes[1, 0]
@@ -197,7 +197,7 @@ rv = [r['roi']      for r in dbs_res]
 bars = ax.barh(sn, rv, color=['#003087', '#0055A4', '#4A90D9'][:len(sn)], edgecolor='white')
 for bar, val in zip(bars, rv):
     ax.text(val + 0.5, bar.get_y() + bar.get_height()/2,
-            f'{val:.1f}%', va='center', fontweight='bold')
+            str(round(val, 1)) + '%', va='center', fontweight='bold')
 ax.set_title('DBS -- ROI by DCA Strategy', fontsize=12)
 ax.set_xlabel('ROI (%)')
 ax.grid(axis='x', alpha=0.3)
@@ -214,11 +214,9 @@ ax.set_xlabel('')
 ax.tick_params(axis='x', rotation=30)
 ax.legend(title='Ticker')
 ax.grid(axis='y', alpha=0.3)
-ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:,.0f}'))
+ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: '{:,.0f}'.format(x)))
 
 plt.tight_layout()
 plt.savefig('dca_backtest_results.png', dpi=150, bbox_inches='tight')
-print("
-Chart saved to dca_backtest_results.png")
-print("
-Done!")
+print("Chart saved to dca_backtest_results.png")
+print("Done!")
